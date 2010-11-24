@@ -1,0 +1,184 @@
+#!/bin/bash
+
+################################################################################
+##### Checks if the user has requested command line help
+################################################################################
+
+if [ "$1" == '-h' -o "$1" == '--help' ]
+then
+    echo
+    echo "Usage: $0 [wikipedia_url]"
+    echo
+    echo 'Puts the content of wikipedia_url in your Calibre database'
+    exit
+fi
+
+################################################################################
+##### Checks for software needed to run the script
+################################################################################
+
+( which zenity > /dev/null ) || ZENITY=no
+if [ "$ZENITY" == 'no' ]
+then
+    echo 'ERROR: you need to install Zenity to run Wikipedia to Calibre'
+    exit
+fi
+
+(( which montage && which mogrify ) > /dev/null ) || IMAGEMAGICK=no
+if [ "$IMAGEMAGICK" == 'no' ]
+then
+    zenity --error \
+            --title='Wikipedia to Calibre' \
+            --text='You need to install ImageMagick to run Wikipedia to Calibre'
+    exit
+fi
+
+(( which web2disk && \
+    which ebook-convert && \
+    which ebook-meta && \
+    which calibredb ) > /dev/null ) || CALIBRE=no
+if [ "$CALIBRE" == 'no' ]
+then
+    zenity --error \
+            --title='Wikipedia to Calibre' \
+            --text='You need to install Calibre to run Wikipedia to Calibre (duh!)'
+    exit
+fi
+
+################################################################################
+##### Determines the Wikipedia URL to retrieve and its components
+################################################################################
+
+if [ "$#" -eq 0 ]
+then
+    WIKIPEDIA_URL=$(zenity --entry \
+                        --text='URL of the Wikipedia article to import' \
+                        --title='Wikipedia to Calibre')
+    [ -z "$WIKIPEDIA_URL" ] && exit   # The user pressed "Cancel"
+else
+    WIKIPEDIA_URL="$1"
+fi
+# The URL, $1, is something like http://it.wikipedia.org/wiki/Montecastrilli
+WIKIPEDIA_SITE=$(echo "$WIKIPEDIA_URL" | cut -d/ -f 3)
+WIKIPEDIA_LANG=$(echo "$WIKIPEDIA_SITE" | cut -d. -f 1)
+WIKIPEDIA_VOICE=$(echo "$WIKIPEDIA_URL" | cut -d/ -f 5)
+WIKIPEDIA_TITLE="${WIKIPEDIA_VOICE//_/ }"
+
+################################################################################
+##### Prepares the paths variables and the temporary directories
+################################################################################
+
+OLD_PWD="$(pwd)"
+TMP_DIR="$HOME/.wikipedia2calibre"
+EPUB_DIR="$HOME/.wikipedia2calibre/epub"
+HTML_DIR="$HOME/.wikipedia2calibre/html"
+SCRIPT_PATH=$(cd ${0%/*} && echo $PWD/${0##*/})
+SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
+rm -fr "$TMP_DIR"
+mkdir -p "$HTML_DIR"
+mkdir -p "$EPUB_DIR"
+cd "$TMP_DIR"
+
+( # Here starts the code tracked by zenity's progress bar
+
+################################################################################
+##### Prepares the cover image
+################################################################################
+
+montage \
+    -label "${WIKIPEDIA_VOICE//_/ }" \
+    "$SCRIPT_DIR/wikipedia-cover-template.jpg" \
+    -geometry +0+0 -pointsize 24 -frame 3 \
+    cover.jpg > /dev/null
+mogrify -resize 600x800 cover.jpg > /dev/null
+echo 20
+
+################################################################################
+##### Creates the ZIP bundle containing the HTML page
+################################################################################
+
+PRINTABLE_URL="http://$WIKIPEDIA_SITE/w/index.php?title=$WIKIPEDIA_VOICE&printable=yes"
+web2disk -d "$HTML_DIR" -r 0 --verbose "$PRINTABLE_URL" > /dev/null
+zip -r pippo-with-anchors.zip html   # I don't use HTML_DIR to not clutter the .ZIP internal paths
+
+# Quick & dirty fix for better EPUB's table of contents detection
+"$SCRIPT_DIR/remove-nontoc-links.py" "$HTML_DIR"/index.xhtml
+
+zip -r pippo.zip html   # I don't use HTML_DIR to not clutter the .ZIP internal paths
+echo 40
+
+################################################################################
+##### Creates the alternative formats
+################################################################################
+
+# Direct conversion from HTML to EPUB or PDF gives the following error:
+# ValueError: All strings must be XML compatible: Unicode or ASCII, no NULL bytes
+ebook-convert pippo.zip pippo.mobi > /dev/null
+ebook-convert pippo.mobi pippo.epub > /dev/null
+#ebook-convert pippo.epub pippo.pdf
+echo 60
+
+################################################################################
+##### Adds the EPUB to Calibre with appropriate metadata
+################################################################################
+
+WIKIPEDIA_TITLE="$WIKIPEDIA_TITLE (Wikipedia $WIKIPEDIA_LANG)"
+
+META="$META --authors=Wikipedia"
+META="$META --author-sort=Wikipedia"
+META="$META --book-producer=Wikipedia"
+META="$META --cover=cover.jpg"
+META="$META --language=$WIKIPEDIA_LANG"
+META="$META --publisher=Wikipedia"
+META="$META --tags=wikipedia"
+ebook-meta pippo.epub $META \
+    --title="$WIKIPEDIA_TITLE" \
+    --comments="From $WIKIPEDIA_URL" \
+    > /dev/null
+
+# Quick & dirty fix for EPUB's table of contents
+mv pippo.epub epub.zip
+unzip epub.zip -d epub && rm epub.zip
+#"$SCRIPT_DIR/fixncx.py" "$EPUB_DIR"/toc.ncx
+
+# Removes the hard wired TOC too
+cd epub
+LAST_HTML=$(ls *.html | tail -n 1)
+grep -v "$LAST_HTML" content.opf > new.opf
+mv new.opf content.opf
+rm "$LAST_HTML"
+cd ..
+
+# And finally rebuilds the epub
+(cd epub && zip -r ../epub.zip *)
+cp epub.zip pippo.epub
+
+calibredb add pippo.epub > /dev/null
+echo 80
+
+################################################################################
+##### Adds the other formats to Calibre
+################################################################################
+
+QUERY="title:\"=$WIKIPEDIA_TITLE\""
+ID=$(calibredb list --search "$QUERY" | grep '^[0-9]\+ ' | cut -d' ' -f 1)
+calibredb add_format $ID pippo-with-anchors.zip > /dev/null
+#calibredb add_format $ID pippo.pdf
+echo 100
+
+################################################################################
+##### Final cleanup
+################################################################################
+
+cd "$OLD_PWD"
+#rm -fr "$TMP_DIR"
+
+) |
+zenity --progress \
+    --title='Wikipedia to Calibre' \
+    --text="Downloadind and importing the article '$WIKIPEDIA_TITLE'..." \
+    --percentage=0
+
+[ "$?" = -1 ] && \
+    zenity --error --title='Wikipedia to Calibre' --text="Import canceled."
+

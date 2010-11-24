@@ -1,0 +1,141 @@
+#!/bin/bash
+
+################################################################################
+##### Checks if the user has requested command line help
+################################################################################
+
+if [ "$1" == '-h' -o "$1" == '--help' ]
+then
+    echo
+    echo "Usage: $0 [url]"
+    echo
+    echo 'Puts the content of url in your Calibre database'
+    exit
+fi
+
+################################################################################
+##### Checks for software needed to run the script
+################################################################################
+
+( which zenity > /dev/null ) || ZENITY=no
+if [ "$ZENITY" == 'no' ]
+then
+    echo 'ERROR: you need to install Zenity to run Webpage to Calibre'
+    exit
+fi
+
+(( which montage && which mogrify ) > /dev/null ) || IMAGEMAGICK=no
+if [ "$IMAGEMAGICK" == 'no' ]
+then
+    zenity --error \
+            --title='Wikipedia to Calibre' \
+            --text='You need to install ImageMagick to run Wikipedia to Calibre'
+    exit
+fi
+
+(( which web2disk && \
+    which ebook-convert && \
+    which ebook-meta && \
+    which calibredb ) > /dev/null ) || CALIBRE=no
+if [ "$CALIBRE" == 'no' ]
+then
+    zenity --error \
+            --title='Wikipedia to Calibre' \
+            --text='You need to install Calibre to run Webpage to Calibre (duh!)'
+    exit
+fi
+
+################################################################################
+##### Determines the URL to retrieve and the title of the webpage
+################################################################################
+
+if [ "$#" -eq 0 ]
+then
+    URL=$(zenity --entry \
+                        --text='URL of the webpage to import' \
+                        --title='Webpage to Calibre')
+    [ -z "$URL" ] && exit   # The user pressed "Cancel"
+else
+    URL="$1"
+fi
+
+TITLE=$(zenity --entry \
+                    --text='Title of the webpage to import' \
+                    --title='Webpage to Calibre')
+[ -z "$TITLE" ] && exit   # The user pressed "Cancel"
+
+################################################################################
+##### Prepares the paths variables and the temporary directories
+################################################################################
+
+OLD_PWD="$(pwd)"
+TMP_DIR="$HOME/.webpage2calibre"
+HTML_DIR="$HOME/.webpage2calibre/html"
+SCRIPT_PATH=$(cd ${0%/*} && echo $PWD/${0##*/})
+SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
+rm -fr "$TMP_DIR"
+mkdir -p "$HTML_DIR"
+cd "$TMP_DIR"
+
+( # Here starts the code tracked by zenity's progress bar
+
+################################################################################
+##### Prepares the cover image
+################################################################################
+
+montage \
+    -label "${TITLE}" \
+    "$SCRIPT_DIR/webpage-cover-template.jpg" \
+    -geometry +0+0 -pointsize 24 -frame 3 \
+    cover.jpg > /dev/null
+mogrify -resize 600x800 cover.jpg > /dev/null
+echo 25
+
+################################################################################
+##### Creates the ZIP bundle containing the HTML page
+################################################################################
+
+web2disk -d "$HTML_DIR" -r 0 --verbose "$URL" > /dev/null
+zip -r pippo.zip html   # I don't use HTML_DIR to not clutter the .ZIP internal paths
+echo 50
+
+################################################################################
+##### Creates the alternative formats
+################################################################################
+
+# Direct conversion from HTML to EPUB or PDF gives the following error:
+# ValueError: All strings must be XML compatible: Unicode or ASCII, no NULL bytes
+ebook-convert pippo.zip pippo.mobi > /dev/null
+ebook-convert pippo.mobi pippo.epub > /dev/null
+echo 75
+
+################################################################################
+##### Adds the EPUB to Calibre with appropriate metadata
+################################################################################
+
+META="$META --cover=cover.jpg"
+META="$META --tags=temp"
+ebook-meta pippo.epub $META \
+    --title="$TITLE" \
+    --comments="From $URL" \
+    > /dev/null
+
+calibredb add pippo.epub > /dev/null
+echo 100
+
+################################################################################
+##### Final cleanup
+################################################################################
+
+cd "$OLD_PWD"
+#rm -fr "$TMP_DIR"
+
+) |
+zenity --progress \
+    --title='Webpage to Calibre' \
+    --text="Downloadind and importing the webpage '$TITLE'..." \
+    --percentage=0
+
+[ "$?" = -1 ] && \
+    zenity --error --title='Webpage to Calibre' --text="Import canceled."
+
