@@ -1,0 +1,11 @@
+
+[Desktop Entry]
+Encoding=UTF-8
+Name=Wikipedia to Calibre
+Comment=Download Wikipedia voices into Calibre's databse
+Exec=/usr/bin/wikipedia2calibre
+Icon=/usr/share/calibre-utils/wikipedia-icon.png
+Terminal=false
+Type=Application
+Categories=GNOME;Application;Network;
+StartupNotify=true

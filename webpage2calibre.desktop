@@ -1,0 +1,11 @@
+
+[Desktop Entry]
+Encoding=UTF-8
+Name=Web page to Calibre
+Comment=Download web pages into Calibre's databse
+Exec=/usr/bin/webpage2calibre
+Icon=/usr/share/calibre-utils/webpage-icon.png
+Terminal=false
+Type=Application
+Categories=GNOME;Application;Network;
+StartupNotify=true
