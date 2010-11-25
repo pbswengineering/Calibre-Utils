@@ -114,7 +114,7 @@ echo 75
 ################################################################################
 
 META="$META --cover=cover.jpg"
-META="$META --tags=temp"
+META="$META --tags=Temp"
 ebook-meta pippo.epub $META \
     --title="$TITLE" \
     --comments="From $URL" \

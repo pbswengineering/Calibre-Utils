@@ -130,7 +130,7 @@ META="$META --book-producer=Wikipedia"
 META="$META --cover=cover.jpg"
 META="$META --language=$WIKIPEDIA_LANG"
 META="$META --publisher=Wikipedia"
-META="$META --tags=wikipedia"
+META="$META --tags=Wikipedia"
 ebook-meta pippo.epub $META \
     --title="$WIKIPEDIA_TITLE" \
     --comments="From $WIKIPEDIA_URL" \
