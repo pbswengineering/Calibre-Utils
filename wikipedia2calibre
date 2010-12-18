@@ -61,7 +61,7 @@ fi
 # The URL, $1, is something like http://it.wikipedia.org/wiki/Montecastrilli
 WIKIPEDIA_SITE=$(echo "$WIKIPEDIA_URL" | cut -d/ -f 3)
 WIKIPEDIA_LANG=$(echo "$WIKIPEDIA_SITE" | cut -d. -f 1)
-WIKIPEDIA_VOICE=$(echo "$WIKIPEDIA_URL" | cut -d/ -f 5)
+WIKIPEDIA_VOICE=$(echo "$WIKIPEDIA_URL" | cut -d/ -f 5-)
 WIKIPEDIA_TITLE="${WIKIPEDIA_VOICE//_/ }"
 
 ################################################################################
@@ -98,6 +98,7 @@ echo 20
 ################################################################################
 
 PRINTABLE_URL="http://$WIKIPEDIA_SITE/w/index.php?title=$WIKIPEDIA_VOICE&printable=yes"
+echo $PRINTABLE_URL > /home/rnd/pippo.txt
 web2disk -d "$HTML_DIR" -r 0 --verbose "$PRINTABLE_URL" > /dev/null
 zip -r pippo-with-anchors.zip html   # I don't use HTML_DIR to not clutter the .ZIP internal paths
 
