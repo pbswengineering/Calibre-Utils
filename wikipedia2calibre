@@ -59,10 +59,19 @@ else
     WIKIPEDIA_URL="$1"
 fi
 # The URL, $1, is something like http://it.wikipedia.org/wiki/Montecastrilli
-WIKIPEDIA_SITE=$(echo "$WIKIPEDIA_URL" | cut -d/ -f 3)
-WIKIPEDIA_LANG=$(echo "$WIKIPEDIA_SITE" | cut -d. -f 1)
-WIKIPEDIA_VOICE=$(echo "$WIKIPEDIA_URL" | cut -d/ -f 5-)
-WIKIPEDIA_TITLE="${WIKIPEDIA_VOICE//_/ }"
+# With HTTPS it becomes https://secure.wikimedia.org/wikipedia/it/wiki/Montecastrilli
+WIKIPEDIA_SITE=$(echo "$WIKIPEDIA_URL" | cut -d/ -f3)
+if [ "$WIKIPEDIA_SITE" = 'secure.wikimedia.org' ]
+then
+    WIKIPEDIA_LANG=$(echo "$WIKIPEDIA_URL" | cut -d/ -f5)
+    WIKIPEDIA_VOICE=$(echo "$WIKIPEDIA_URL" | cut -d/ -f7-)
+    WIKIPEDIA_TITLE="${WIKIPEDIA_VOICE//_/ }"
+    WIKIPEDIA_SITE="$WIKIPEDIA_LANG.wikipedia.org"
+else
+    WIKIPEDIA_LANG=$(echo "$WIKIPEDIA_SITE" | cut -d. -f1)
+    WIKIPEDIA_VOICE=$(echo "$WIKIPEDIA_URL" | cut -d/ -f5-)
+    WIKIPEDIA_TITLE="${WIKIPEDIA_VOICE//_/ }"
+fi
 
 ################################################################################
 ##### Prepares the paths variables and the temporary directories
