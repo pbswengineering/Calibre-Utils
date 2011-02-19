@@ -99,7 +99,7 @@ montage \
     "$SCRIPT_DIR/wikipedia-cover-template.jpg" \
     -geometry +0+0 -pointsize 24 -frame 3 \
     cover.jpg > /dev/null
-mogrify -resize 600x800 cover.jpg > /dev/null
+mogrify -resize 590x754! cover.jpg > /dev/null
 echo 20
 
 ################################################################################
