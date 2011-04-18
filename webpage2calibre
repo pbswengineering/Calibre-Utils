@@ -121,11 +121,12 @@ ebook-meta pippo.epub $META \
     > /dev/null
 
 # Lets the user edit the EPUB (if possible) before adding it to Calibre
-which sigil.sh && \
+SIGIL="$(which sigil || which sigil.sh)"
+[ -n "$SIGIL" ] && \
     zenity --question \
             --title='Webpage to Calibre' \
             --text='Edit with Sigil before saving into Calibre?' && \
-                sigil.sh pippo.epub
+                "$SIGIL" pippo.epub
 
 calibredb add pippo.epub > /dev/null
 echo 100
