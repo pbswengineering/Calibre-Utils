@@ -1,5 +1,46 @@
 #!/bin/bash
 
+# Removes the menus and other accessory content from the Cryptogram
+# web page. All the main content is kept inside a
+# <td class="contentcell">...</td>
+#
+# Usage: declutterize input.html outpout.html
+#
+function declutterize
+{
+	INFILE="$1"
+	OUTFILE="$2"
+
+	OLD_IFS="$IFS"
+	IFS=$'\n'
+	BEGIN_WRITE=''
+	END_WRITE=''
+	cat > "$OUTFILE" << EOF
+<html>
+<head>
+<title>Cryptogram - $(date +'%B %Y') issue</title>
+</head>
+<body>
+EOF
+	for LINE in $(cat "$INFILE")
+	do
+		if [ -z "$BEGIN_WRITE" ]
+		then
+			BEGIN_WRITE=$(echo "$LINE" | grep '<td class="contentcell">')
+		else
+			if [ -z "$END_WRITE" ]
+			then
+				echo "$LINE" >> "$OUTFILE"
+				END_WRITE=$(echo "$LINE" | grep '</td>')
+			fi
+		fi
+	done
+
+	cat >> "$OUTFILE" << EOF
+</body></html>
+EOF
+}
+
 ################################################################################
 ##### Checks if the user has requested command line help
 ################################################################################
@@ -7,9 +48,9 @@
 if [ "$1" == '-h' -o "$1" == '--help' ]
 then
     echo
-    echo "Usage: $0 [url]"
+    echo "Usage: $0"
     echo
-    echo 'Puts the content of url in your Calibre database'
+    echo 'Puts the latest issue of Cryptogram into your Calibre database'
     exit
 fi
 
@@ -28,8 +69,8 @@ fi
 if [ "$IMAGEMAGICK" == 'no' ]
 then
     zenity --error \
-            --title='Webpage to Calibre' \
-            --text='You need to install ImageMagick to run Webpage to Calibre'
+            --title='Cryptogram to Calibre' \
+            --text='You need to install ImageMagick to run Cryptogram to Calibre'
     exit
 fi
 
@@ -40,8 +81,8 @@ fi
 if [ "$CALIBRE" == 'no' ]
 then
     zenity --error \
-            --title='Webpage to Calibre' \
-            --text='You need to install Calibre to run Webpage to Calibre (duh!)'
+            --title='Cryptogram to Calibre' \
+            --text='You need to install Calibre to run Cryptogram to Calibre (duh!)'
     exit
 fi
 
@@ -49,28 +90,16 @@ fi
 ##### Determines the URL to retrieve and the title of the webpage
 ################################################################################
 
-if [ "$#" -eq 0 ]
-then
-    URL=$(zenity --entry \
-                        --text='URL of the webpage to import' \
-                        --title='Webpage to Calibre')
-    [ -z "$URL" ] && exit   # The user pressed "Cancel"
-else
-    URL="$1"
-fi
-
-TITLE=$(zenity --entry \
-                    --text='Title of the webpage to import' \
-                    --title='Webpage to Calibre')
-[ -z "$TITLE" ] && exit   # The user pressed "Cancel"
+URL='http://www.schneier.com/crypto-gram-current.html'
+TITLE="Cryptogram - $(date +%B) issue"
 
 ################################################################################
 ##### Prepares the paths variables and the temporary directories
 ################################################################################
 
 OLD_PWD="$(pwd)"
-TMP_DIR="$HOME/.webpage2calibre"
-HTML_DIR="$HOME/.webpage2calibre/html"
+TMP_DIR="$HOME/.cryptogram2calibre"
+HTML_DIR="$HOME/.cryptogram2calibre/html"
 SCRIPT_PATH=$(cd ${0%/*} && echo $PWD/${0##*/})
 SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
 rm -fr "$TMP_DIR"
@@ -85,7 +114,7 @@ cd "$TMP_DIR"
 
 montage \
     -label "${TITLE}" \
-    "$SCRIPT_DIR/webpage-cover-template.jpg" \
+    "$SCRIPT_DIR/cryptogram-cover-template.jpg" \
     -geometry +0+0 -pointsize 24 -frame 3 \
     cover.jpg > /dev/null
 mogrify -resize 590x754! cover.jpg > /dev/null
@@ -96,6 +125,7 @@ echo 25
 ################################################################################
 
 web2disk -d "$HTML_DIR" -r 0 --verbose "$URL" > /dev/null
+declutterize "$HTML_DIR/crypto-gram-current.xhtml" "$HTML_DIR/index.html"
 zip -r pippo.zip html   # I don't use HTML_DIR to not clutter the .ZIP internal paths
 echo 50
 
@@ -114,18 +144,12 @@ echo 75
 ################################################################################
 
 META="$META --cover=cover.jpg"
-META="$META --tags=Temp"
 ebook-meta pippo.epub $META \
     --title="$TITLE" \
-    --comments="From $URL" \
+	--authors='Bruce Schneier' \
+	--author-sort='Schneier, Bruce' \
+	--tags='Cryptogram, IT, Security' \
     > /dev/null
-
-# Lets the user edit the EPUB (if possible) before adding it to Calibre
-which sigil.sh && \
-    zenity --question \
-            --title='Webpage to Calibre' \
-            --text='Edit with Sigil before saving into Calibre?' && \
-                sigil.sh pippo.epub
 
 calibredb add pippo.epub > /dev/null
 echo 100
@@ -139,10 +163,10 @@ rm -fr "$TMP_DIR"
 
 ) |
 zenity --progress \
-    --title='Webpage to Calibre' \
-    --text="Downloadind and importing the webpage '$TITLE'..." \
+    --title='Cryptogram to Calibre' \
+    --text="Downloadind and importing webpage '$TITLE'..." \
     --percentage=0
 
 [ "$?" = -1 ] && \
-    zenity --error --title='Webpage to Calibre' --text="Import canceled."
+    zenity --error --title='Cryptogram to Calibre' --text="Import canceled."
 
