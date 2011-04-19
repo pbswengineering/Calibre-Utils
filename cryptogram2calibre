@@ -91,7 +91,7 @@ fi
 ################################################################################
 
 URL='http://www.schneier.com/crypto-gram-current.html'
-TITLE="Cryptogram - $(date +%B) issue"
+TITLE="Crypto-Gram - $(date +'%B %Y') issue"
 
 ################################################################################
 ##### Prepares the paths variables and the temporary directories
@@ -135,8 +135,8 @@ echo 50
 
 # Direct conversion from HTML to EPUB or PDF gives the following error:
 # ValueError: All strings must be XML compatible: Unicode or ASCII, no NULL bytes
-ebook-convert pippo.zip pippo.mobi > /dev/null
-ebook-convert pippo.mobi pippo.epub > /dev/null
+ebook-convert pippo.zip pippo.mobi --no-inline-toc --cover=cover.jpg > /dev/null
+ebook-convert pippo.mobi pippo.epub --preserve-cover-aspect-ratio --dont-split-on-page-breaks --cover=cover.jpg > /dev/null
 echo 75
 
 ################################################################################
@@ -144,6 +144,7 @@ echo 75
 ################################################################################
 
 META="$META --cover=cover.jpg"
+
 ebook-meta pippo.epub $META \
     --title="$TITLE" \
 	--authors='Bruce Schneier' \
@@ -152,6 +153,7 @@ ebook-meta pippo.epub $META \
     > /dev/null
 
 calibredb add pippo.epub > /dev/null
+
 echo 100
 
 ################################################################################
@@ -159,7 +161,7 @@ echo 100
 ################################################################################
 
 cd "$OLD_PWD"
-rm -fr "$TMP_DIR"
+#rm -fr "$TMP_DIR"
 
 ) |
 zenity --progress \
