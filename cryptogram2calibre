@@ -143,9 +143,8 @@ echo 75
 ##### Adds the EPUB to Calibre with appropriate metadata
 ################################################################################
 
-META="$META --cover=cover.jpg"
-
-ebook-meta pippo.epub $META \
+ebook-meta pippo.epub \
+    --cover=cover.jpg \
     --title="$TITLE" \
 	--authors='Bruce Schneier' \
 	--author-sort='Schneier, Bruce' \
@@ -153,6 +152,22 @@ ebook-meta pippo.epub $META \
     > /dev/null
 
 calibredb add pippo.epub > /dev/null
+
+################################################################################
+##### Adds the MOBI to Calibre
+################################################################################
+
+ebook-meta pippo.mobi \
+    --cover=cover.jpg \
+    --title="$TITLE" \
+	--authors='Bruce Schneier' \
+	--author-sort='Schneier, Bruce' \
+	--tags='Cryptogram, IT, Security' \
+    > /dev/null
+
+QUERY="title:\"=$TITLE\""
+ID=$(calibredb list --search "$QUERY" | grep '^[0-9]\+ ' | cut -d' ' -f 1)
+calibredb add_format $ID pippo.mobi > /dev/null
 
 echo 100
 
