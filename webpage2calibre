@@ -105,8 +105,8 @@ echo 50
 
 # Direct conversion from HTML to EPUB or PDF gives the following error:
 # ValueError: All strings must be XML compatible: Unicode or ASCII, no NULL bytes
-ebook-convert pippo.zip pippo.mobi > /dev/null
-ebook-convert pippo.mobi pippo.epub > /dev/null
+ebook-convert pippo.zip pippo.mobi --cover=cover.jpg > /dev/null
+ebook-convert pippo.mobi pippo.epub --preserve-cover-aspect-ratio --cover=cover.jpg> /dev/null
 echo 75
 
 ################################################################################
