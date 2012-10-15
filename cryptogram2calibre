@@ -148,7 +148,7 @@ ebook-meta pippo.epub \
     --title="$TITLE" \
 	--authors='Bruce Schneier' \
 	--author-sort='Schneier, Bruce' \
-	--tags='Cryptogram, IT, Security' \
+	--tags='Cryptogram' \
     > /dev/null
 
 calibredb add pippo.epub > /dev/null
