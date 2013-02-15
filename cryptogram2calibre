@@ -115,7 +115,7 @@ cd "$TMP_DIR"
 montage \
     -label "${TITLE}" \
     "$SCRIPT_DIR/cryptogram-cover-template.jpg" \
-    -geometry +0+0 -pointsize 24 -frame 3 \
+    -geometry +0+0 -pointsize 7 -frame 3 \
     cover.jpg > /dev/null
 mogrify -resize 590x754! cover.jpg > /dev/null
 echo 25
