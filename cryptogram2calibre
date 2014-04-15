@@ -26,12 +26,12 @@ EOF
 	do
 		if [ -z "$BEGIN_WRITE" ]
 		then
-			BEGIN_WRITE=$(echo "$LINE" | grep '<td class="contentcell">')
+			BEGIN_WRITE=$(echo "$LINE" | grep '<div id="content">')
 		else
 			if [ -z "$END_WRITE" ]
 			then
 				echo "$LINE" >> "$OUTFILE"
-				END_WRITE=$(echo "$LINE" | grep '</td>')
+				END_WRITE=$(echo "$LINE" | grep '</div>')
 			fi
 		fi
 	done
