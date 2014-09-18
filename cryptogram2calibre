@@ -34,7 +34,7 @@ EOF
 			if [ -z "$END_WRITE" ]
 			then
 				echo "$LINE" >> "$OUTFILE"
-				END_WRITE=$(echo "$LINE" | grep '<p id="powered">')
+				END_WRITE=$(echo "$LINE" | grep '</div>')
 			fi
 		fi
 	done
