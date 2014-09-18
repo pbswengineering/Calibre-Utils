@@ -1,5 +1,8 @@
 #!/bin/bash
 
+export LANG=en_US.utf8
+export LC_ALL=en_US.utf8
+
 # Removes the menus and other accessory content from the Cryptogram
 # web page. All the main content is kept inside a
 # <td class="contentcell">...</td>
@@ -26,12 +29,12 @@ EOF
 	do
 		if [ -z "$BEGIN_WRITE" ]
 		then
-			BEGIN_WRITE=$(echo "$LINE" | grep '<td class="contentcell">')
+			BEGIN_WRITE=$(echo "$LINE" | grep '<div id="content">')
 		else
 			if [ -z "$END_WRITE" ]
 			then
 				echo "$LINE" >> "$OUTFILE"
-				END_WRITE=$(echo "$LINE" | grep '</td>')
+				END_WRITE=$(echo "$LINE" | grep '<p id="powered">')
 			fi
 		fi
 	done
@@ -115,7 +118,7 @@ cd "$TMP_DIR"
 montage \
     -label "${TITLE}" \
     "$SCRIPT_DIR/cryptogram-cover-template.jpg" \
-    -geometry +0+0 -pointsize 7 -frame 3 \
+    -geometry +0+0 -pointsize 21 -frame 3 \
     cover.jpg > /dev/null
 mogrify -resize 590x754! cover.jpg > /dev/null
 echo 25
