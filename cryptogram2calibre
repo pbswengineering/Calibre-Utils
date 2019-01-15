@@ -3,7 +3,7 @@
 # A simple script to download the current month's Crypto-Gram issue and import
 # it in my Calibre library.
 # 
-# Requirements: cURL, ImageMagik, Calibre (duh!), Zenity
+# Requirements: cURL, ImageMagik, Calibre (duh!), Zenity, ncftp, GNU sed
 #
 
 export LANG=en_US.utf8
@@ -18,37 +18,50 @@ export LC_ALL=en_US.utf8
 #
 function declutterize
 {
-	INFILE="$1"
-	OUTFILE="$2"
+    INFILE="$1"
+    OUTFILE="$2"
 
-	OLD_IFS="$IFS"
-	IFS=$'\n'
-	BEGIN_WRITE=''
-	END_WRITE=''
-	cat > "$OUTFILE" << EOF
+    OLD_IFS="$IFS"
+    IFS=$'\n'
+    BEGIN_WRITE=''
+    END_WRITE=''
+    cat > "$OUTFILE" << EOF
 <html>
 <head>
 <title>Crypto-Gram - $(date +'%B %Y') issue</title>
 </head>
 <body>
 EOF
-	for LINE in $(cat "$INFILE")
-	do
-		if [ -z "$BEGIN_WRITE" ]
-		then
-			BEGIN_WRITE=$(echo "$LINE" | grep '<div id="content">')
-		else
-			if [ -z "$END_WRITE" ]
-			then
-				echo "$LINE" >> "$OUTFILE"
-				END_WRITE=$(echo "$LINE" | grep '</div><!--#content-->')
-			fi
-		fi
-	done
+    for LINE in $(cat "$INFILE")
+    do
+        if [ -z "$BEGIN_WRITE" ]
+        then
+            BEGIN_WRITE=$(echo "$LINE" | grep '<div id="content">')
+        else
+            if [ -z "$END_WRITE" ]
+            then
+                echo "$LINE" >> "$OUTFILE"
+                END_WRITE=$(echo "$LINE" | grep '</div><!--#content-->')
+            fi
+        fi
+    done
 
-	cat >> "$OUTFILE" << EOF
+    cat >> "$OUTFILE" << EOF
 </body></html>
 EOF
+}
+
+#
+# Uploads a file to my blog's cryptogram directory.
+#
+# Usage: ftp_upload cryptogram_last.epub
+#
+function ftp_upload {
+    FILE_TO_UPLOAD="$1"
+    ncftpput \
+        -f "$NCFTPCFG" \
+        www.bernardi.cloud/cryptogram \
+        "$FILE_TO_UPLOAD"
 }
 
 ################################################################################
@@ -96,6 +109,42 @@ then
     exit
 fi
 
+# This script relies on GNU sed. On Mac OS X it must be installed
+# with brew install gnu-sed
+if [[ "$OSTYPE" == 'darwin'* ]]
+then
+    SED=/usr/local/opt/gnu-sed/libexec/gnubin/sed
+    if [ ! -e "$SED" ]
+    then
+        zenity --error \
+                --title='Crypto-Gram to Calibre' \
+                --text='You need to install gnu-sed (brew install gnu-sed)'
+        exit
+    fi
+else
+    SED=sed
+fi
+
+(( which ncftpput ) > /dev/null ) || NCFTP=no
+if [ "$NCFTP" == 'no' ]
+then
+    zenity --error \
+            --title='Crypto-Gram to Calibre' \
+            --text='You need to install ncftp to run Crypto-Gram to Calibre'
+    exit
+fi
+
+# I'm not putting my FTP credentials in a public repository.
+# If needed, at most, I'll make this a parameter.
+NCFTPCFG=/bc/dotfiles/bernardi.cloud/ncftp-cryptogram.cfg
+if [ ! -e "$NCFTPCFG" ]
+then
+    zenity --error \
+            --title='Crypto-Gram to Calibre' \
+            --text="ncftp credentials are missing: $NCFTPCFG"
+    exit
+fi
+
 ################################################################################
 ##### Prepares the paths variables and the temporary directories
 ################################################################################
@@ -117,10 +166,10 @@ cd "$TMP_DIR"
 ################################################################################
 
 URL=$(curl 'https://www.schneier.com/crypto-gram/' \
-	| grep -o '<a .*href="https://www.schneier.com/crypto-gram/archives/.*>' \
-	| sed -e 's/<a /\n<a /g' \
-	| sed -e 's/<a .*href=['"'"'"]//' -e 's/["'"'"'].*$//' -e '/^$/ d' \
-	| head -n1)
+    | grep -o '<a .*href="https://www.schneier.com/crypto-gram/archives/.*>' \
+    | "$SED" -e 's/<a /\n<a /g' \
+    | "$SED" -e 's/<a .*href=['"'"'"]//' -e 's/["'"'"'].*$//' -e '/^$/ d' \
+    | head -n1)
 echo 20
 
 ################################################################################
@@ -133,7 +182,7 @@ montage \
     -geometry +0+0 -pointsize 21 -frame 3 \
     cover.jpg > /dev/null
 mogrify -resize 590x754! cover.jpg > /dev/null
-echo 40
+echo 30
 
 ################################################################################
 ##### Creates the ZIP bundle containing the HTML page
@@ -143,7 +192,7 @@ web2disk -d "$HTML_DIR" -r 0 --verbose "$URL" > /dev/null
 HTML_FILE=$(echo "$HTML_DIR/"*.xhtml | head -n1)
 declutterize "$HTML_FILE" "$HTML_DIR/index.html"
 zip -r pippo.zip html   # I don't use HTML_DIR to not clutter the .ZIP internal paths
-echo 60
+echo 50
 
 ################################################################################
 ##### Creates the alternative formats
@@ -153,7 +202,7 @@ echo 60
 # ValueError: All strings must be XML compatible: Unicode or ASCII, no NULL bytes
 ebook-convert pippo.zip pippo.mobi --no-inline-toc --cover=cover.jpg > /dev/null
 ebook-convert pippo.mobi pippo.epub --preserve-cover-aspect-ratio --dont-split-on-page-breaks --cover=cover.jpg > /dev/null
-echo 80
+echo 60
 
 ################################################################################
 ##### Adds the EPUB to Calibre with appropriate metadata
@@ -162,12 +211,13 @@ echo 80
 ebook-meta pippo.epub \
     --cover=cover.jpg \
     --title="$TITLE" \
-	--authors='Bruce Schneier' \
-	--author-sort='Schneier, Bruce' \
-	--tags='Crypto-Gram' \
+    --authors='Bruce Schneier' \
+    --author-sort='Schneier, Bruce' \
+    --tags='Crypto-Gram' \
     > /dev/null
 
 calibredb add pippo.epub > /dev/null
+echo 70
 
 ################################################################################
 ##### Adds the MOBI to Calibre
@@ -176,15 +226,30 @@ calibredb add pippo.epub > /dev/null
 ebook-meta pippo.mobi \
     --cover=cover.jpg \
     --title="$TITLE" \
-	--authors='Bruce Schneier' \
-	--author-sort='Schneier, Bruce' \
-	--tags='Crypto-Gram, IT, Security' \
+    --authors='Bruce Schneier' \
+    --author-sort='Schneier, Bruce' \
+    --tags='Crypto-Gram, IT, Security' \
     > /dev/null
 
 QUERY="title:\"=$TITLE\""
 ID=$(calibredb list --search "$QUERY" | grep '^[0-9]\+ ' | cut -d' ' -f 1)
 calibredb add_format $ID pippo.mobi > /dev/null
+echo 80
 
+################################################################################
+##### Upload the files to my blog
+################################################################################
+
+EPUB_MONTHLY=cryptogram-$(date '+%Y-%m').epub
+EPUB_LAST=cryptogram-last.epub
+cp pippo.epub "$EPUB_MONTHLY" && ftp_upload "$EPUB_MONTHLY"
+cp pippo.epub "$EPUB_LAST" && ftp_upload "$EPUB_LAST"
+echo 90
+
+MOBI_MONTHLY=cryptogram-$(date '+%Y-%m').mobi
+MOBI_LAST=cryptogram-last.mobi
+cp pippo.mobi "$MOBI_MONTHLY" && ftp_upload "$MOBI_MONTHLY"
+cp pippo.mobi "$MOBI_LAST" && ftp_upload "$MOBI_LAST"
 echo 100
 
 ################################################################################
