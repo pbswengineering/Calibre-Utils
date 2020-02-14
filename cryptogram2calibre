@@ -58,10 +58,15 @@ EOF
 #
 function ftp_upload {
     FILE_TO_UPLOAD="$1"
-    ncftpput \
-        -f "$NCFTPCFG" \
-        www.bernardi.cloud/cryptogram \
-        "$FILE_TO_UPLOAD"
+    if [ -d '/bernardi.cloud' ]
+    then
+        cp "$FILE_TO_UPLOAD" /bernardi.cloud/static/cryptogram
+    else
+        ncftpput \
+            -f "$NCFTPCFG" \
+            www.bernardi.cloud/cryptogram \
+            "$FILE_TO_UPLOAD"
+    fi
 }
 
 ################################################################################
@@ -125,13 +130,20 @@ else
     SED=sed
 fi
 
-(( which ncftpput ) > /dev/null ) || NCFTP=no
-if [ "$NCFTP" == 'no' ]
+if [ -d '/bernardi.cloud' ]
 then
-    zenity --error \
-            --title='Crypto-Gram to Calibre' \
-            --text='You need to install ncftp to run Crypto-Gram to Calibre'
-    exit
+    zenity --info \
+            --title="Crypto-Gram to Calibre" \
+            --text='The files will be copied to /bernardi.cloud/static/cryptogram'
+else
+    (( which ncftpput ) > /dev/null ) || NCFTP=no
+    if [ "$NCFTP" == 'no' ]
+    then
+        zenity --error \
+                --title='Crypto-Gram to Calibre' \
+                --text='You need to install ncftp to run Crypto-Gram to Calibre'
+        exit
+    fi
 fi
 
 # I'm not putting my FTP credentials in a public repository.
@@ -251,6 +263,36 @@ MOBI_LAST=cryptogram-last.mobi
 cp pippo.mobi "$MOBI_MONTHLY" && ftp_upload "$MOBI_MONTHLY"
 cp pippo.mobi "$MOBI_LAST" && ftp_upload "$MOBI_LAST"
 echo 100
+
+################################################################################
+##### Generate a Hugo post, if applicable
+################################################################################
+
+if [ -d '/bernardi.cloud' ]
+then
+    VAR_YYYY=$(date +'%Y')
+    VAR_MM=$(date +'%m')
+    VAR_DD=$(date +'%d')
+    VAR_MONTH=$(date +'%B')
+    VAR_month=$(echo "$VAR_MONTH" | tr '[:upper:]' '[:lower:]')
+    echo 'HUGO TEMPLATE VARIABLES'
+    echo '-----------------------'
+    echo "YYYY=$VAR_YYYY"
+    echo "MM=$VAR_MM"
+    echo "DD=$VAR_DD"
+    echo "VAR_MONTH=$VAR_MONTH"
+    echo "VAR_month=$VAR_month"
+    ARTICLE="$VAR_YYYY-$VAR_MM-$VAR_DD-crypto-gram-$VAR_month-$VAR_YYYY-in-epub-and-mobi-format.md"
+    ARTICLE="/bernardi.cloud/content/crypto-gram-for-e-readers/$ARTICLE"
+    SED=/usr/local/opt/gnu-sed/libexec/gnubin/sed
+    SCRIPT_DIR=/github/Calibre-Utils
+    cp "$SCRIPT_DIR/hugo-template.md" "$ARTICLE"
+    "$SED" -i "s/_YYYY_/$VAR_YYYY/g" "$ARTICLE"
+    "$SED" -i "s/_MM_/$VAR_MM/g" "$ARTICLE"
+    "$SED" -i "s/_DD_/$VAR_DD/g" "$ARTICLE"
+    "$SED" -i "s/_MONTH_/$VAR_MONTH/g" "$ARTICLE"
+    "$SED" -i "s/_month_/$VAR_month/g" "$ARTICLE"
+fi
 
 ################################################################################
 ##### Final cleanup
