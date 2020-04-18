@@ -58,9 +58,9 @@ EOF
 #
 function ftp_upload {
     FILE_TO_UPLOAD="$1"
-    if [ -d '/bernardi.cloud' ]
+    if [ -d "$HOME/bernardi.cloud" ]
     then
-        cp "$FILE_TO_UPLOAD" /bernardi.cloud/static/cryptogram
+        cp "$FILE_TO_UPLOAD" "$HOME/bernardi.cloud/static/cryptogram"
     else
         ncftpput \
             -f "$NCFTPCFG" \
@@ -130,11 +130,11 @@ else
     SED=sed
 fi
 
-if [ -d '/bernardi.cloud' ]
+if [ -d "$HOME/bernardi.cloud'"]
 then
     zenity --info \
             --title="Crypto-Gram to Calibre" \
-            --text='The files will be copied to /bernardi.cloud/static/cryptogram'
+            --text="The files will be copied to $HOME/bernardi.cloud/static/cryptogram"
 else
     (( which ncftpput ) > /dev/null ) || NCFTP=no
     if [ "$NCFTP" == 'no' ]
@@ -148,7 +148,7 @@ fi
 
 # I'm not putting my FTP credentials in a public repository.
 # If needed, at most, I'll make this a parameter.
-NCFTPCFG=/bc/dotfiles/bernardi.cloud/ncftp-cryptogram.cfg
+NCFTPCFG="$HOME/bc/dotfiles/bernardi.cloud/ncftp-cryptogram.cfg"
 if [ ! -e "$NCFTPCFG" ]
 then
     zenity --error \
@@ -268,7 +268,7 @@ echo 100
 ##### Generate a Hugo post, if applicable
 ################################################################################
 
-if [ -d '/bernardi.cloud' ]
+if [ -d "$HOME/bernardi.cloud" ]
 then
     VAR_YYYY=$(date +'%Y')
     VAR_MM=$(date +'%m')
@@ -283,9 +283,7 @@ then
     echo "VAR_MONTH=$VAR_MONTH"
     echo "VAR_month=$VAR_month"
     ARTICLE="$VAR_YYYY-$VAR_MM-$VAR_DD-crypto-gram-$VAR_month-$VAR_YYYY-in-epub-and-mobi-format.md"
-    ARTICLE="/bernardi.cloud/content/crypto-gram-for-e-readers/$ARTICLE"
-    SED=/usr/local/opt/gnu-sed/libexec/gnubin/sed
-    SCRIPT_DIR=/github/Calibre-Utils
+    ARTICLE="$HOME/bernardi.cloud/content/crypto-gram-for-e-readers/$ARTICLE"
     cp "$SCRIPT_DIR/hugo-template.md" "$ARTICLE"
     "$SED" -i "s/_YYYY_/$VAR_YYYY/g" "$ARTICLE"
     "$SED" -i "s/_MM_/$VAR_MM/g" "$ARTICLE"
@@ -299,7 +297,7 @@ fi
 ################################################################################
 
 cd "$OLD_PWD"
-#rm -fr "$TMP_DIR"
+rm -fr "$TMP_DIR"
 
 ) |
 zenity --progress \
