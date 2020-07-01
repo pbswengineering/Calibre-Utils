@@ -212,8 +212,15 @@ echo 50
 
 # Direct conversion from HTML to EPUB or PDF gives the following error:
 # ValueError: All strings must be XML compatible: Unicode or ASCII, no NULL bytes
-ebook-convert pippo.zip pippo.mobi --no-inline-toc --cover=cover.jpg > /dev/null
-ebook-convert pippo.mobi pippo.epub --preserve-cover-aspect-ratio --dont-split-on-page-breaks --cover=cover.jpg > /dev/null
+ebook-convert pippo.zip pippo.mobi \
+  --no-inline-toc \
+  --cover=cover.jpg \
+  > /dev/null
+ebook-convert pippo.mobi pippo.epub \
+  --preserve-cover-aspect-ratio \
+  --dont-split-on-page-breaks \
+  --cover=cover.jpg \
+  > /dev/null
 echo 60
 
 ################################################################################
@@ -302,7 +309,7 @@ rm -fr "$TMP_DIR"
 ) |
 zenity --progress \
     --title='Crypto-Gram to Calibre' \
-    --text="Downloadind and importing webpage '$TITLE'..." \
+    --text="Downloading and importing webpage '$TITLE'..." \
     --percentage=0
 
 [ "$?" = -1 ] && \
