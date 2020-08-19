@@ -130,7 +130,7 @@ else
     SED=sed
 fi
 
-if [ -d "$HOME/bernardi.cloud'"]
+if [ -d "$HOME/bernardi.cloud" ]
 then
     zenity --info \
             --title="Crypto-Gram to Calibre" \
