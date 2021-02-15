@@ -1,38 +1,24 @@
-.PHONY: all clean install uninstall
+.PHONY: all format check clean
 
-all:
-	@echo "It's all there, just an ls away!"
+all: format types lint
+
+# I prefer black to yapf.
+# yapf -ri .
+format:
+	black cryptogram2calibre.py
+
+types:
+	mypy --ignore-missing-imports cryptogram2calibre.py
+
+# Ignored rules:
+#   E203: whitespace before ':' (black imposes spaces in expressions such as s[x1 : x2])
+#   E266: too many leading '#' for block comment
+#   E501: line too long
+#   W503: line break before binary operator
+lint:
+	flake8 --ignore=E203,E266,E501,W503 cryptogram2calibre.py
 
 clean:
-	rm -f *~
-
-install:
-	mkdir -p $(DESTDIR)/usr/share/calibre-utils/
-	cp webpage2calibre wikipedia2calibre remove-nontoc-links.py $(DESTDIR)/usr/share/calibre-utils/
-	cp webpage-icon.png wikipedia-icon.png $(DESTDIR)/usr/share/calibre-utils/
-	cp webpage-cover-template.jpg wikipedia-cover-template.jpg $(DESTDIR)/usr/share/calibre-utils/
-	mkdir -p $(DESTDIR)/usr/share/doc/calibre-utils/
-	cp AUTHORS COPYING README $(DESTDIR)/usr/share/doc/calibre-utils/
-	test -d $(DESTDIR)/usr/bin/ || mkdir -p $(DESTDIR)/usr/bin/
-
-	# A symbolic link isn't the same... The absolute path is stored into
-	# it, so my computer's path would remain into it; a script seems a
-	# better choice.
-	echo /usr/share/calibre-utils/webpage2calibre > $(DESTDIR)/usr/bin/webpage2calibre
-	chmod +x $(DESTDIR)/usr/bin/webpage2calibre
-	echo /usr/share/calibre-utils/wikipedia2calibre > $(DESTDIR)/usr/bin/wikipedia2calibre
-	chmod +x $(DESTDIR)/usr/bin/wikipedia2calibre
-
-	test -d $(DESTDIR)/usr/share/applications/ || mkdir -p $(DESTDIR)/usr/share/applications/
-	cp webpage2calibre.desktop $(DESTDIR)/usr/share/applications/
-	cp wikipedia2calibre.desktop $(DESTDIR)/usr/share/applications/
-	update-desktop-database || true
-
-uninstall:
-	rm -f $(DESTDIR)/usr/bin/webpage2calibre
-	rm -f $(DESTDIR)/usr/bin/wikipedia2calibre
-	rm -fr $(DESTDIR)/usr/share/calibre-utils/
-	rm -fr $(DESTDIR)/usr/share/doc/calibre-utils/
-	rm -f $(DESTDIR)/usr/share/applications/webpage2calibre.desktop
-	rm -f $(DESTDIR)/usr/share/applications/wikipedia2calibre.desktop
-	update-desktop-database || true
+	rm -fr target/
+	find . -name __pycache__ -type d -exec rm -fr {} +
+	find . -name .mypy_cache -type d -exec rm -fr {} +
