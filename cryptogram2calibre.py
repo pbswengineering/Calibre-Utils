@@ -65,7 +65,7 @@ class ImageMagick(ExternalCommand):
             self.cmd_mogrify = [magick, "mogrify"]
         else:
             self.cmd_montage = [self.which("montage")]
-            self.cmd_montage = [self.which("mogrify")]
+            self.cmd_mogrify = [self.which("mogrify")]
         if self.get_init_errors():
             self.add_init_error("Please install ImageMagick")
 
@@ -337,5 +337,8 @@ class Cryptogram2Calibre:
 
 
 if __name__ == "__main__":
-    locale.setlocale(category=locale.LC_ALL, locale="English")
+    try:
+       locale.setlocale(category=locale.LC_ALL, locale="English")
+    except:
+       locale.setlocale(category=locale.LC_ALL, locale="en_US")
     Cryptogram2Calibre().run()
