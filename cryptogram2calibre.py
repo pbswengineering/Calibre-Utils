@@ -171,7 +171,7 @@ class Calibre(ExternalCommand):
         cmd = ["calibredb", "list", "--search", f"title:{title}"]
         res = subprocess.run(cmd, capture_output=True)
         output = res.stdout.decode("utf-8")
-        book_ids = re.findall(r"^\d+", output)
+        book_ids = re.findall(r"^\d+", output, re.MULTILINE)
         if book_ids:
             return book_ids[0]
         else:
