@@ -224,7 +224,9 @@ class SchneierDotCom:
 class BernardiDotCloud:
     def publish_crypto_gram(self, epub_file: str, mobi_file: str):
         print("\n\n")
-        dir_base = os.path.join(os.path.expanduser("~"), "bernardi.cloud")
+        # I assume that Calibre-Utils is in the github directory,
+        # which is on the same level as the bernardi.cloud repo
+        dir_base = os.path.join("..", "..", "bernardi.cloud")
         if not os.path.exists(dir_base):
             print(
                 f"The directory {dir_base} doesn't exist, I will not updated the bernardi.cloud website"
