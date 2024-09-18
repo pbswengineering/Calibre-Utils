@@ -22,6 +22,15 @@ from lxml import etree, html
 import requests
 
 
+# Since lately I'm more and more unable to keep up with
+# the monthly schedule I've decided to parametrize the
+# current date, so as to make late runs easier
+now = datetime.datetime.now()
+current_month = now.month
+month = int(input(f"Month (1-12, default {current_month}): ") or current_month)
+now = now.replace(month=month)
+
+
 def zipdir(path, ziph):
     # Thanks to https://stackoverflow.com/a/1855118
     for root, _, files in os.walk(path):
@@ -196,7 +205,10 @@ class SchneierDotCom:
         )
         if not archive_as:
             return None
-        return archive_as[0].attrib["href"]
+        archive_url = archive_as[(current_month - month) * 2].attrib["href"]
+        print("   DEBUG: ---------> ARCHIVE_URL", archive_url)
+        print("\n".join(["   DEBUG: " + a.attrib["href"] for a in archive_as]))
+        return archive_url
 
     def declutterize(self, title: str, index_xhtml: str) -> bool:
         with codecs.open(index_xhtml, "r", "utf-8") as f:
@@ -233,7 +245,6 @@ class BernardiDotCloud:
             )
             return
         # Generate the Hugo post template
-        now = datetime.datetime.now()
         yyyy = now.strftime("%Y")
         mm = now.strftime("%m")
         dd = now.strftime("%d")
@@ -285,7 +296,7 @@ class Cryptogram2Calibre:
             sys.exit(1)
 
     def run(self):
-        date_str = datetime.datetime.now().strftime("%B %Y")
+        date_str = now.strftime("%B %Y")
         title = f"Crypto-Gram - {date_str} issue"
         # Get the URL of the latest Crypto-Gram issue
         latest_issue_url = self.schneier_dot_com.get_latest_issue_url()
