@@ -68,10 +68,10 @@ class ImageMagick(ExternalCommand):
 
     def __init__(self):
         super().__init__()
-        if sys.platform == "win32":
-            magick = self.which("magick")
-            self.cmd_montage = [magick, "montage"]
-            self.cmd_mogrify = [magick, "mogrify"]
+        magick = self.which("magick")
+        if magick:
+             self.cmd_montage = [magick, "montage"]
+             self.cmd_mogrify = [magick, "mogrify"]
         else:
             self.cmd_montage = [self.which("montage")]
             self.cmd_mogrify = [self.which("mogrify")]
