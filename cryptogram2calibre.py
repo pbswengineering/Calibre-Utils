@@ -54,9 +54,9 @@ class ExternalCommand:
     def get_init_errors(self) -> List[str]:
         return self.init_errors
 
-    def which(self, exe: str):
+    def which(self, exe: str, ignore_errors: bool = False):
         res = shutil.which(exe)
-        if not res:
+        if not res and not ignore_errors:
             self.init_errors.append(f"{exe} not found")
         return res
 
@@ -68,10 +68,10 @@ class ImageMagick(ExternalCommand):
 
     def __init__(self):
         super().__init__()
-        magick = self.which("magick")
+        magick = self.which("magick", ignore_errors=True)
         if magick:
-             self.cmd_montage = [magick, "montage"]
-             self.cmd_mogrify = [magick, "mogrify"]
+            self.cmd_montage = [magick, "montage"]
+            self.cmd_mogrify = [magick, "mogrify"]
         else:
             self.cmd_montage = [self.which("montage")]
             self.cmd_mogrify = [self.which("mogrify")]
@@ -351,7 +351,7 @@ class Cryptogram2Calibre:
 
 if __name__ == "__main__":
     try:
-       locale.setlocale(category=locale.LC_ALL, locale="English")
+        locale.setlocale(category=locale.LC_ALL, locale="English")
     except:
-       locale.setlocale(category=locale.LC_ALL, locale="en_US")
+        locale.setlocale(category=locale.LC_ALL, locale="en_US")
     Cryptogram2Calibre().run()
