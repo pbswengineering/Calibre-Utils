@@ -238,12 +238,17 @@ class BernardiDotCloud:
         print("\n\n")
         # I assume that Calibre-Utils is in the github directory,
         # which is on the same level as the bernardi.cloud repo
-        dir_base = os.path.join("..", "..", "bernardi.cloud")
+        dir_base = os.path.join("..", "bernardi.cloud")
         if not os.path.exists(dir_base):
             print(
-                f"The directory {dir_base} doesn't exist, I will not updated the bernardi.cloud website"
+                f"The directory {dir_base} doesn't exist..."
             )
-            return
+            dir_base = os.path.join("..", "..", "bernardi.cloud")
+            if not os.path.exists(dir_base):
+                print(
+                    f"The directory {dir_base} doesn't exist, I will not updated the bernardi.cloud website"
+                )
+                return
         # Generate the Hugo post template
         yyyy = now.strftime("%Y")
         mm = now.strftime("%m")
